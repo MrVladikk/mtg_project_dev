@@ -1,0 +1,44 @@
+{% extends "mtg_app/base.html" %}
+
+{% block title %}Сеты — MTG Коллекция{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+  <div class="col-12">
+    <h2 class="fw-bold text-warning"><i class="bi bi-layers-fill"></i> Сеты Magic: The Gathering</h2>
+    <p class="text-muted">Всего сетов: {{ sets.count }}</p>
+  </div>
+</div>
+
+<div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+  {% for set in sets %}
+    <div class="col">
+      <a href="{% url 'mtg_app:set_detail' pk=set.id %}" class="text-decoration-none">
+        <div class="card h-100 bg-dark-panel hover-card">
+          <div class="card-body d-flex align-items-center">
+            <div class="rounded-circle bg-dark border border-secondary d-flex align-items-center justify-content-center me-3" style="width: 60px; height: 60px;">
+              <i class="bi bi-box-seam fs-3 text-warning"></i>
+            </div>
+            
+            <div>
+              <h5 class="card-title mb-1 text-white">{{ set.name }}</h5>
+              <div class="d-flex gap-2 align-items-center">
+                <span class="badge bg-warning text-dark font-monospace">{{ set.code|upper }}</span>
+                <span class="text-muted small"><i class="bi bi-card-image"></i> {{ set.cards.count }} карт</span>
+              </div>
+            </div>
+            
+            <div class="ms-auto text-muted">
+              <i class="bi bi-chevron-right"></i>
+            </div>
+          </div>
+        </div>
+      </a>
+    </div>
+  {% empty %}
+    <div class="col-12 text-center text-muted py-5">
+      Сеты не найдены.
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

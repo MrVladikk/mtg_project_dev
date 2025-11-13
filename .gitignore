@@ -1,0 +1,41 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- Django ---
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+staticfiles/
+
+# --- Переменные окружения (СЕКРЕТНО!) ---
+# Это самое важное. Никогда не пушьте .env файл с паролями!
+.env
+
+# --- Медиа файлы (Картинки карт) ---
+# Мы игнорируем всё в папке media, так как картинки скачиваются скриптом
+# и их не нужно хранить в Git (они занимают много места).
+media/
+
+# --- Виртуальное окружение ---
+# Папка, где лежат библиотеки. В Git она не нужна.
+venv/
+env/
+.venv/
+.env/
+
+# --- IDE и ОС (Настройки редактора) ---
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# --- Временные файлы и отчеты ---
+url_audit.json
+pytest_cache/
+.pytest_cache/
+htmlcov/
+.coverage

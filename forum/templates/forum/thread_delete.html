@@ -1,0 +1,27 @@
+{% extends "mtg_app/base.html" %}
+
+{% block title %}Удаление темы{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+  <div class="col-md-6">
+    <div class="card bg-dark-panel border-danger">
+      <div class="card-body text-center p-5">
+        <i class="bi bi-exclamation-triangle-fill text-danger display-1 mb-3"></i>
+        <h2 class="fw-bold text-white mb-3">Удалить тему?</h2>
+        <p class="text-muted mb-4">
+          Вы собираетесь удалить тему <strong class="text-white">"{{ thread.title }}"</strong>.<br>
+          Это действие удалит саму тему и все ответы к ней.<br>
+          Отменить это действие будет невозможно.
+        </p>
+        
+        <form method="post" class="d-flex gap-3 justify-content-center">
+          {% csrf_token %}
+          <a href="{% url 'forum:thread_detail' pk=thread.id %}" class="btn btn-outline-light px-4">Отмена</a>
+          <button type="submit" class="btn btn-danger px-4 fw-bold">Да, удалить навсегда</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

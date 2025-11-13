@@ -1,0 +1,68 @@
+{% extends "mtg_app/base.html" %}
+
+{% block title %}Форум — MTG Коллекция{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+  <div class="col-md-8">
+    <h2 class="fw-bold text-warning"><i class="bi bi-chat-square-text-fill"></i> Обсуждения</h2>
+    <p class="text-muted mb-0">Общайтесь, делитесь колодами и задавайте вопросы.</p>
+  </div>
+  <div class="col-md-4 text-md-end mt-3 mt-md-0">
+    {% if user.is_authenticated %}
+      <a href="{% url 'forum:thread_create' %}" class="btn btn-warning fw-bold">
+        <i class="bi bi-plus-lg"></i> Новая тема
+      </a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="d-flex flex-column gap-3">
+  {% for thread in threads %}
+    <div class="card bg-dark-panel border-start border-4 border-secondary hover-card transition-all">
+      <div class="card-body p-3 p-md-4">
+        <div class="row align-items-center">
+          <div class="col-md-8 mb-2 mb-md-0">
+            <h5 class="mb-1">
+              <a href="{% url 'forum:thread_detail' pk=thread.id %}" class="text-white text-decoration-none stretched-link">
+                {{ thread.title }}
+              </a>
+            </h5>
+            <div class="text-muted small">
+              <i class="bi bi-person-fill text-warning"></i> {{ thread.author.username }} 
+              <span class="mx-2">•</span> 
+              <i class="bi bi-clock"></i> {{ thread.created_at|date:"d E Y, H:i" }}
+            </div>
+          </div>
+          
+          <div class="col-md-4 text-md-end">
+            <div class="d-inline-flex align-items-center gap-3">
+              <div class="text-center px-3 py-1 rounded bg-black bg-opacity-25 border border-secondary">
+                <div class="fw-bold text-white">{{ thread.posts.count }}</div>
+                <div class="text-muted" style="font-size: 0.7rem; text-transform: uppercase;">Ответов</div>
+              </div>
+              <i class="bi bi-chevron-right text-muted"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% empty %}
+    <div class="text-center py-5 border rounded bg-dark-panel border-secondary border-dashed">
+      <i class="bi bi-chat-square-quote fs-1 text-muted"></i>
+      <p class="mt-3 text-muted">Пока нет ни одной темы. Будьте первым!</p>
+      {% if user.is_authenticated %}
+        <a href="{% url 'forum:thread_create' %}" class="btn btn-outline-warning mt-2">Создать тему</a>
+      {% endif %}
+    </div>
+  {% endfor %}
+</div>
+
+<style>
+  .hover-card:hover {
+    border-color: var(--mtg-gold) !important;
+    background-color: #1f1f25; /* Чуть светлее при наведении */
+  }
+  .border-dashed { border-style: dashed !important; }
+</style>
+{% endblock %}

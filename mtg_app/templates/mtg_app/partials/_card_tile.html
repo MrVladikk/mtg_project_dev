@@ -1,0 +1,18 @@
+{% load static %}
+<article class="card">
+  <div class="card__image">
+    {% if card.image_url %}
+      <img src="{{ MEDIA_URL }}{{ card.image_url }}" alt="{{ card.name }}">
+    {% else %}
+      <img src="{% static 'mtg_app/images/placeholder_card.png' %}" alt="{{ card.name }}">
+    {% endif %}
+  </div>
+  <div class="card__header"><h3 class="card__title">{{ card.name }}</h3></div>
+  <div class="card--inner">
+    <p class="muted">Сет: {{ card.set.name }} ({{ card.set.code }})</p>
+    <p class="muted">Редкость: {{ card.rarity }} • Язык: {{ card.language }}</p>
+    <div class="form-actions">
+      <a class="btn btn-primary" href="{% url 'mtg_app:card_detail' card.id %}">Подробнее</a>
+    </div>
+  </div>
+</article>

@@ -1,0 +1,76 @@
+{% extends "mtg_app/base.html" %}
+
+{% block title %}{{ deck.name }} — Колода{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="card bg-dark-panel border-start border-warning border-4">
+      <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+          <div>
+            <h1 class="display-6 fw-bold mb-2">{{ deck.name }}</h1>
+            <p class="text-muted mb-3">{{ deck.description|default:"Без описания" }}</p>
+            
+            <div class="d-flex gap-3 text-small">
+              <span class="text-warning"><i class="bi bi-person-fill"></i> {{ deck.owner.username }}</span>
+              <span class="text-white"><i class="bi bi-files"></i> {{ deck.cards.count }} карт</span>
+            </div>
+          </div>
+
+          {% if user == deck.owner %}
+            <div class="d-flex gap-2">
+              <a href="#" class="btn btn-outline-secondary btn-sm disabled" title="Редактировать (скоро)"><i class="bi bi-pencil"></i> Изменить</a>
+              <a href="#" class="btn btn-outline-danger btn-sm disabled" title="Удалить (скоро)"><i class="bi bi-trash"></i> Удалить</a>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h4 class="mb-3 text-white border-bottom border-secondary pb-2">Состав колоды</h4>
+
+<div class="row row-cols-2 row-cols-md-4 row-cols-xl-6 g-3">
+  {% for card in deck.cards.all %}
+    <div class="col">
+      <div class="card h-100 border-0 bg-transparent">
+        <a href="{% url 'mtg_app:card_detail' pk=card.id %}" class="d-block position-relative">
+          <div class="mtg-card-img-wrapper rounded">
+            {% if card.image %}
+              <img src="{{ card.image.url }}" alt="{{ card.name }}">
+            {% elif card.image_url %}
+              {% if card.image_url|slice:":1" == "/" or card.image_url|slice:":4" == "http" %}
+                <img src="{{ card.image_url }}" alt="{{ card.name }}">
+              {% else %}
+                <img src="/media/{{ card.image_url }}" alt="{{ card.name }}">
+              {% endif %}
+            {% elif card.image_filename %}
+              <img src="/media/{{ card.image_filename }}" alt="{{ card.name }}">
+            {% else %}
+              <div class="card-placeholder">
+                <span>{{ card.name }}</span>
+              </div>
+            {% endif %}
+          </div>
+          
+          </a>
+        <div class="text-center mt-1">
+          <small class="text-truncate d-block text-muted">{{ card.name }}</small>
+        </div>
+      </div>
+    </div>
+  {% empty %}
+    <div class="col-12 text-center py-5 text-muted">
+      В этой колоде пока нет карт.
+    </div>
+  {% endfor %}
+</div>
+
+<div class="mt-4">
+  <a href="{% url 'mtg_app:deck_list' %}" class="btn btn-outline-light btn-sm">
+    <i class="bi bi-arrow-left"></i> К списку колод
+  </a>
+</div>
+{% endblock %}

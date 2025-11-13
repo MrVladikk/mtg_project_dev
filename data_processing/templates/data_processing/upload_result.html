@@ -1,0 +1,76 @@
+{% extends "mtg_app/base.html" %}
+
+{% block title %}Результат импорта — MTG Коллекция{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    
+    <div class="card bg-dark-panel border-secondary shadow-lg">
+      <div class="card-header bg-transparent border-secondary py-3">
+        <h4 class="mb-0 fw-bold text-white">
+          <i class="bi bi-clipboard-data text-warning"></i> Отчет об импорте
+        </h4>
+      </div>
+      
+      <div class="card-body p-4">
+        <div class="row g-3 mb-4 text-center">
+          <div class="col-md-3 col-6">
+            <div class="p-3 rounded bg-black border border-success h-100">
+              <div class="fs-2 fw-bold text-success">{{ results.created|default:"0" }}</div>
+              <small class="text-muted text-uppercase">Создано</small>
+            </div>
+          </div>
+          <div class="col-md-3 col-6">
+            <div class="p-3 rounded bg-black border border-info h-100">
+              <div class="fs-2 fw-bold text-info">{{ results.updated|default:"0" }}</div>
+              <small class="text-muted text-uppercase">Обновлено</small>
+            </div>
+          </div>
+          <div class="col-md-3 col-6">
+            <div class="p-3 rounded bg-black border border-warning h-100">
+              <div class="fs-2 fw-bold text-warning">{{ results.downloaded|default:"0" }}</div>
+              <small class="text-muted text-uppercase">Скачано фото</small>
+            </div>
+          </div>
+          <div class="col-md-3 col-6">
+            <div class="p-3 rounded bg-black border border-danger h-100">
+              <div class="fs-2 fw-bold text-danger">{{ results.errors|default:"0" }}</div>
+              <small class="text-muted text-uppercase">Ошибок</small>
+            </div>
+          </div>
+        </div>
+
+        {% if errors_list %}
+          <div class="card bg-black border-danger mb-4">
+            <div class="card-header bg-danger bg-opacity-10 text-danger fw-bold border-danger">
+              <i class="bi bi-exclamation-octagon-fill"></i> Список проблем
+            </div>
+            <div class="card-body p-0">
+              <ul class="list-group list-group-flush bg-transparent">
+                {% for error in errors_list %}
+                  <li class="list-group-item bg-transparent text-white-50 border-secondary small">
+                    {{ error }}
+                  </li>
+                {% endfor %}
+              </ul>
+            </div>
+          </div>
+        {% else %}
+          <div class="alert alert-success bg-success bg-opacity-10 border-success text-success text-center">
+            <i class="bi bi-check-circle-fill fs-4 d-block mb-2"></i>
+            Импорт прошел идеально! Ошибок не обнаружено.
+          </div>
+        {% endif %}
+
+        <div class="d-grid">
+          <a href="{% url 'mtg_app:card_list' %}" class="btn btn-outline-light">
+            Перейти к коллекции
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

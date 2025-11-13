@@ -1,0 +1,97 @@
+{% extends "mtg_app/base.html" %}
+{% load static %}
+
+{% block title %}Главная — MTG Коллекция{% endblock %}
+
+{% block content %}
+<div class="p-5 mb-5 bg-dark-panel rounded-4 border border-secondary position-relative overflow-hidden shadow-lg text-center">
+  <div class="position-absolute top-0 start-0 w-100 h-100" style="background: radial-gradient(circle at top right, rgba(246, 194, 92, 0.1), transparent 40%); pointer-events: none;"></div>
+  
+  <div class="position-relative z-1 py-4">
+    <h1 class="display-4 fw-bold text-white mb-3">
+      Собирай. <span class="text-warning">Делись.</span> Играй.
+    </h1>
+    <p class="col-lg-8 mx-auto fs-5 text-muted mb-4">
+      Удобный инструмент для управления вашей коллекцией Magic: The Gathering. 
+      Создавайте колоды, анализируйте карты и общайтесь с сообществом.
+    </p>
+    <div class="d-inline-flex gap-3">
+      <a href="{% url 'mtg_app:card_list' %}" class="btn btn-warning btn-lg fw-bold px-4">
+        <i class="bi bi-search"></i> Найти карту
+      </a>
+      {% if user.is_authenticated %}
+        <a href="{% url 'mtg_app:add_deck' %}" class="btn btn-outline-light btn-lg fw-bold px-4">
+          <i class="bi bi-plus-lg"></i> Создать колоду
+        </a>
+      {% else %}
+        <a href="{% url 'mtg_app:register' %}" class="btn btn-outline-light btn-lg fw-bold px-4">
+          Регистрация
+        </a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mb-5">
+  
+  <div class="col-md-6">
+    <a href="{% url 'mtg_app:deck_list' %}" class="text-decoration-none">
+      <div class="card h-100 bg-dark-panel hover-card border-0 shadow-sm transition-transform">
+        <div class="card-body p-5 text-center">
+          <div class="rounded-circle bg-black bg-opacity-50 d-inline-flex p-3 mb-3 border border-secondary">
+            <i class="bi bi-stack fs-1 text-primary"></i>
+          </div>
+          <h3 class="card-title text-white">Колоды</h3>
+          <p class="card-text text-muted">
+            Создавайте мощные колоды, анализируйте мана-кривую и делитесь своими сборками с другими игроками.
+          </p>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <div class="col-md-6">
+    <a href="{% url 'forum:thread_list' %}" class="text-decoration-none">
+      <div class="card h-100 bg-dark-panel hover-card border-0 shadow-sm transition-transform">
+        <div class="card-body p-5 text-center">
+          <div class="rounded-circle bg-black bg-opacity-50 d-inline-flex p-3 mb-3 border border-secondary">
+            <i class="bi bi-chat-square-text fs-1 text-success"></i>
+          </div>
+          <h3 class="card-title text-white">Форум</h3>
+          <p class="card-text text-muted">
+            Обсуждайте новости Magic: The Gathering, задавайте вопросы по правилам и находите новых друзей.
+          </p>
+        </div>
+      </div>
+    </a>
+  </div>
+</div>
+
+{% if user.is_authenticated %}
+  <div class="card bg-gradient-dark border-secondary mb-4">
+    <div class="card-body p-4 d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div>
+        <h5 class="text-white mb-1"><i class="bi bi-filetype-csv text-info"></i> Есть коллекция в Excel/CSV?</h5>
+        <p class="text-muted mb-0 small">Загрузите файл, и мы автоматически добавим карты, найдем цены и картинки.</p>
+      </div>
+      <a href="{% url 'data_processing:upload_csv' %}" class="btn btn-sm btn-info fw-bold text-dark">
+        Загрузить коллекцию
+      </a>
+    </div>
+  </div>
+{% endif %}
+
+<style>
+  .transition-transform {
+    transition: transform 0.3s ease, border-color 0.3s ease;
+    border: 1px solid var(--mtg-border) !important;
+  }
+  .transition-transform:hover {
+    transform: translateY(-5px);
+    border-color: var(--mtg-gold) !important;
+  }
+  .bg-gradient-dark {
+    background: linear-gradient(45deg, #17171c, #1f1f25);
+  }
+</style>
+{% endblock %}

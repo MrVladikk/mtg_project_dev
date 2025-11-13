@@ -1,0 +1,108 @@
+{% extends "mtg_app/base.html" %}
+
+{% block title %}Импорт коллекции — MTG Коллекция{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 60vh;">
+  <div class="col-lg-6 col-md-8">
+    
+    <div class="card bg-dark-panel border-info border-opacity-25 shadow-lg">
+      <div class="card-header bg-transparent border-secondary py-3 text-center">
+        <h3 class="mb-0 fw-bold text-white">
+          <i class="bi bi-filetype-csv text-info"></i> Импорт CSV
+        </h3>
+      </div>
+      
+      <div class="card-body p-4">
+        <div class="alert alert-dark border-secondary d-flex align-items-start gap-3 mb-4">
+          <i class="bi bi-info-circle-fill text-info fs-4 mt-1"></i>
+          <div class="small text-muted">
+            <strong class="text-white">Как это работает:</strong><br>
+            Загрузите CSV-файл с вашей коллекцией (например, экспорт из Scryfall или Manabox).
+            Мы автоматически создадим карты, обновим цены и скачаем изображения.
+          </div>
+        </div>
+
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger border-danger">
+              {% for error in form.non_field_errors %}
+                <div><i class="bi bi-exclamation-circle"></i> {{ error }}</div>
+              {% endfor %}
+            </div>
+          {% endif %}
+
+          {% for field in form %}
+            <div class="mb-4">
+              <label for="{{ field.id_for_label }}" class="form-label text-muted small text-uppercase fw-bold mb-1">
+                {{ field.label }}
+              </label>
+              
+              <div class="input-group">
+                {{ field }}
+              </div>
+
+              {% if field.errors %}
+                <div class="mt-1 text-danger small">
+                  {% for error in field.errors %}
+                    <i class="bi bi-exclamation-triangle-fill"></i> {{ error }}
+                  {% endfor %}
+                </div>
+              {% endif %}
+              
+              {% if field.help_text %}
+                <div class="form-text text-white-50 small fst-italic">
+                  {{ field.help_text }}
+                </div>
+              {% endif %}
+            </div>
+          {% endfor %}
+
+          <div class="d-grid mt-4">
+            <button type="submit" class="btn btn-info fw-bold text-dark py-2">
+              <i class="bi bi-cloud-upload-fill"></i> Загрузить и обработать
+            </button>
+          </div>
+        </form>
+      </div>
+      
+      <div class="card-footer bg-transparent border-secondary text-center py-3">
+        <a href="{% url 'mtg_app:card_list' %}" class="text-muted text-decoration-none small">
+          <i class="bi bi-arrow-left"></i> Вернуться к списку карт
+        </a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+  input[type="file"] {
+    width: 100%;
+    background-color: #000 !important;
+    border: 1px solid var(--mtg-border);
+    border-radius: 8px;
+    padding: 10px;
+    color: #fff;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  input[type="file"]:focus {
+    border-color: var(--bs-info);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(13, 202, 240, 0.15);
+  }
+  
+  /* Стили для чекбоксов (если есть опции в форме) */
+  input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--bs-info);
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+</style>
+{% endblock %}
+

@@ -1,0 +1,114 @@
+{% extends "mtg_app/base.html" %}
+{% load static %}
+
+{% block title %}{{ card.name }} — Карта{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-10 col-xl-9">
+    
+    <div class="card bg-dark-panel border-warning border-opacity-25 overflow-hidden">
+      <div class="card-body p-0">
+        <div class="row g-0">
+          
+          <div class="col-md-5 bg-black d-flex align-items-center justify-content-center p-4 border-end border-secondary">
+            {% if card.image %}
+              <img src="{{ card.image.url }}" alt="{{ card.name }}" class="detail-card-img shadow-lg">
+            {% elif card.image_url %}
+              {% if card.image_url|slice:":1" == "/" or card.image_url|slice:":4" == "http" %}
+                <img src="{{ card.image_url }}" alt="{{ card.name }}" class="detail-card-img shadow-lg">
+              {% else %}
+                <img src="/media/{{ card.image_url }}" alt="{{ card.name }}" class="detail-card-img shadow-lg">
+              {% endif %}
+            {% elif card.image_filename %}
+              <img src="/media/{{ card.image_filename }}" alt="{{ card.name }}" class="detail-card-img shadow-lg">
+            {% else %}
+              <div class="text-muted text-center border border-secondary rounded p-5" style="width: 100%; max-width: 300px; aspect-ratio: 2.5/3.5; display: flex; align-items: center; justify-content: center;">
+                <span>Нет изображения</span>
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-7 p-4 d-flex flex-column">
+            
+            <div class="mb-4">
+              <h1 class="display-6 fw-bold text-white mb-2">{{ card.name }}</h1>
+              {% if card.set %}
+                <a href="{% url 'mtg_app:set_detail' pk=card.set.id %}" class="text-warning text-decoration-none fs-5 d-inline-flex align-items-center gap-2">
+                  <i class="bi bi-layers-fill"></i> {{ card.set.name }} <span class="badge bg-warning text-dark ms-1">{{ card.set.code|upper }}</span>
+                </a>
+              {% endif %}
+            </div>
+
+            <div class="card bg-dark border-secondary mb-4">
+              <div class="card-body d-flex align-items-center justify-content-between">
+                <span class="text-muted">Рыночная цена</span>
+                <span class="fs-2 fw-bold text-warning">
+                  {% if card.purchase_price %}
+                    {{ card.purchase_price|floatformat:2 }} ₽
+                  {% else %}
+                    —
+                  {% endif %}
+                </span>
+              </div>
+            </div>
+
+            <div class="row g-3 mb-4">
+              <div class="col-6">
+                <div class="p-3 rounded bg-black bg-opacity-25 border border-secondary h-100">
+                  <small class="text-muted d-block text-uppercase mb-1" style="font-size: 0.75rem;">Редкость</small>
+                  <span class="fs-5 fw-medium text-white">
+                    {% if card.rarity == 'mythic' %}
+                      <span class="text-danger"><i class="bi bi-gem"></i> Mythic</span>
+                    {% elif card.rarity == 'rare' %}
+                      <span class="text-warning"><i class="bi bi-star-fill"></i> Rare</span>
+                    {% else %}
+                      {{ card.rarity|default:"—"|title }}
+                    {% endif %}
+                  </span>
+                </div>
+              </div>
+              
+              <div class="col-6">
+                <div class="p-3 rounded bg-black bg-opacity-25 border border-secondary h-100">
+                  <small class="text-muted d-block text-uppercase mb-1" style="font-size: 0.75rem;">Количество</small>
+                  <span class="fs-5 fw-medium text-white">{{ card.quantity|default:"0" }} шт.</span>
+                </div>
+              </div>
+
+              <div class="col-6">
+                <div class="p-3 rounded bg-black bg-opacity-25 border border-secondary h-100">
+                  <small class="text-muted d-block text-uppercase mb-1" style="font-size: 0.75rem;">Номер</small>
+                  <span class="font-monospace text-white">#{{ card.collector_number|default:"—" }}</span>
+                </div>
+              </div>
+
+              <div class="col-6">
+                <div class="p-3 rounded bg-black bg-opacity-25 border border-secondary h-100">
+                  <small class="text-muted d-block text-uppercase mb-1" style="font-size: 0.75rem;">Foil</small>
+                  {% if card.foil %}
+                    <span class="text-info"><i class="bi bi-stars"></i> Да</span>
+                  {% else %}
+                    <span class="text-muted">Нет</span>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-auto d-flex gap-2">
+              <a href="{% url 'mtg_app:card_list' %}" class="btn btn-outline-light">
+                <i class="bi bi-arrow-left"></i> Назад
+              </a>
+              <button class="btn btn-outline-warning flex-grow-1">
+                <i class="bi bi-pencil-square"></i> Редактировать
+              </button>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

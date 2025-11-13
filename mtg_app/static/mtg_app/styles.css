@@ -1,0 +1,104 @@
+/* Импорт шрифта, если CDN не сработает */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  /* Переопределение переменных Bootstrap для темной темы */
+  --bs-body-bg: #0f0f12;       /* Основной фон (очень темный) */
+  --bs-body-color: #e9e9ee;    /* Цвет текста */
+  --bs-font-sans-serif: 'Inter', system-ui, -apple-system, sans-serif;
+  
+  /* Наши цвета */
+  --mtg-panel: #17171c;
+  --mtg-border: #2d2d35;
+  --mtg-gold: #f6c25c;
+}
+
+body {
+  font-family: var(--bs-font-sans-serif);
+  background-image: radial-gradient(circle at 50% 0%, #1e1e24 0%, #0f0f12 70%);
+  background-attachment: fixed;
+}
+
+/* Кастомные классы для панелей */
+.bg-dark-panel {
+  background-color: var(--mtg-panel) !important;
+}
+
+.card, .panel {
+  background-color: var(--mtg-panel);
+  border: 1px solid var(--mtg-border);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+
+/* Стили ссылок */
+a {
+  text-decoration: none;
+  transition: 0.2s;
+}
+a:hover {
+  color: var(--mtg-gold);
+}
+
+/* --- СПЕЦИАЛЬНЫЕ СТИЛИ ДЛЯ КАРТ MTG --- */
+
+/* Обертка картинки в карточке товара (Grid) */
+.mtg-card-img-wrapper {
+  position: relative;
+  width: 100%;
+  /* Магия пропорций MTG карт (2.5 / 3.5) */
+  padding-top: 139%; 
+  background-color: #000;
+  overflow: hidden;
+  border-radius: 6px 6px 0 0; /* Скругление только сверху */
+}
+
+/* Сама картинка внутри обертки */
+.mtg-card-img-wrapper img,
+.mtg-card-img-wrapper .card-placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Обрезаем лишнее */
+  transition: transform 0.3s ease;
+}
+
+/* Эффект при наведении */
+.card:hover .mtg-card-img-wrapper img {
+  transform: scale(1.05);
+  filter: brightness(1.1);
+}
+
+/* Заглушка, если нет фото */
+.mtg-card-img-wrapper .card-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 10px;
+  border: 1px dashed #444;
+}
+
+/* Для страницы деталей (Detail View) */
+.detail-card-img {
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+/* Стилизация полей ввода (делаем их темными) */
+.form-control, .form-select {
+  background-color: #121217;
+  border-color: var(--mtg-border);
+  color: #fff;
+}
+.form-control:focus, .form-select:focus {
+  background-color: #1a1a20;
+  border-color: var(--mtg-gold);
+  color: #fff;
+  box-shadow: 0 0 0 0.25rem rgba(246, 194, 92, 0.25);
+}

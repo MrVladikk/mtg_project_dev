@@ -1,0 +1,10 @@
+{% extends "mtg_app/base.html" %}
+{% block title %}Вы вышли — MTG Коллекция{% endblock %}
+{% block content %}
+<section class="container">
+  <div class="card"><div class="card--inner">
+    <p>Вы успешно вышли из аккаунта.</p>
+    <div class="form-actions"><a class="btn btn-primary" href="{% url 'login' %}">Войти снова</a></div>
+  </div></div>
+</section>
+{% endblock %}
