@@ -7,10 +7,14 @@ from django.db.models import Count, Q, Sum
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
+from django.http import HttpResponseForbidden
+from django.http import JsonResponse
+from django.conf import settings
 
 from mtg_app.models import Card, Deck, Set
 
 from .forms import CardForm, DeckForm
+from .forms import DeckForm, DeckCardFormSet, CardForm
 
 
 def home(request):
@@ -159,15 +163,45 @@ def add_card(request):
 def add_deck(request):
     if request.method == "POST":
         form = DeckForm(request.POST)
-        if form.is_valid():
+        # prefix='deck_cards' обязателен, так как он прописан в JS
+        formset = DeckCardFormSet(request.POST, prefix='deck_cards')
+        
+        if form.is_valid() and formset.is_valid():
+            # 1. Сохраняем саму колоду
             deck = form.save(commit=False)
             deck.owner = request.user
             deck.save()
-            form.save_m2m()
-            return redirect("mtg_app:deck_list")
+            
+            # 2. Сохраняем карты (ЯВНЫЙ МЕТОД)
+            # Получаем объекты, но пока не пишем в базу
+            cards = formset.save(commit=False)
+            
+            # Проходим по каждому и вручную привязываем к колоде
+            for deck_card in cards:
+                deck_card.deck = deck
+                deck_card.save()
+            
+            # 3. Удаляем те, что были помечены на удаление (актуально для редактирования)
+            for obj in formset.deleted_objects:
+                obj.delete()
+                
+            messages.success(request, f"Колода \"{deck.name}\" сохранена! ({len(cards)} карт)")
+            return redirect('mtg_app:deck_detail', pk=deck.pk)
+        else:
+            # Вывод ошибок в консоль, чтобы мы знали правду
+            print("--- ОШИБКИ ВАЛИДАЦИИ ---")
+            print("Form:", form.errors)
+            print("Formset:", formset.errors)
+            print("Formset Non-form:", formset.non_form_errors())
+            messages.error(request, "Ошибка сохранения. Проверьте данные.")
     else:
         form = DeckForm()
-    return render(request, "mtg_app/add_deck.html", {"form": form})
+        formset = DeckCardFormSet(prefix='deck_cards')
+        
+    return render(request, 'mtg_app/add_deck.html', {
+        'form': form,
+        'formset': formset
+    })
 
 
 def custom_logout(request):
@@ -183,3 +217,78 @@ def delete_deck(request, pk):
         raise Http404("У вас нет прав на удаление этой колоды")
     deck.delete()
     return redirect("mtg_app:deck_list")
+
+
+@login_required
+def deck_edit(request, pk):
+    deck = get_object_or_404(Deck, pk=pk)
+    
+    if deck.owner != request.user:
+        return HttpResponseForbidden("Вы не владелец этой колоды.")
+    
+    if request.method == "POST":
+        form = DeckForm(request.POST, instance=deck)
+        formset = DeckCardFormSet(request.POST, instance=deck, prefix='deck_cards')
+        
+        if form.is_valid() and formset.is_valid():
+            form.save()
+            
+            # Тот же надежный метод сохранения
+            cards = formset.save(commit=False)
+            for deck_card in cards:
+                deck_card.deck = deck
+                deck_card.save()
+                
+            for obj in formset.deleted_objects:
+                obj.delete()
+                
+            messages.success(request, "Колода обновлена!")
+            return redirect('mtg_app:deck_detail', pk=deck.pk)
+        else:
+            print("Errors:", formset.errors)
+    else:
+        form = DeckForm(instance=deck)
+        formset = DeckCardFormSet(instance=deck, prefix='deck_cards')
+    
+    return render(request, 'mtg_app/add_deck.html', {
+        'form': form, 
+        'deck': deck,
+        'formset': formset
+    })
+
+@login_required
+def deck_delete(request, pk):
+    deck = get_object_or_404(Deck, pk=pk)
+    
+    if deck.owner != request.user:
+        return HttpResponseForbidden("Вы не можете удалить чужую колоду.")
+    
+    if request.method == "POST":
+        deck.delete()
+        messages.success(request, f"Колода \"{deck.name}\" удалена.")
+        return redirect('mtg_app:deck_list')
+        
+    return render(request, 'mtg_app/deck_confirm_delete.html', {'deck': deck})
+
+def get_card_image(request):
+    """API для получения URL картинки по ID карты (для AJAX)"""
+    card_id = request.GET.get('id')
+    if card_id:
+        try:
+            card = Card.objects.get(pk=card_id)
+            
+            # 1. Проверяем, есть ли физическое поле 'image' и есть ли в нем файл
+            if hasattr(card, 'image') and card.image:
+                return JsonResponse({'url': card.image.url})
+            
+            # 2. Если нет, проверяем поле ссылки 'image_url' (от CSV импорта)
+            elif hasattr(card, 'image_url') and card.image_url:
+                if card.image_url.startswith('http') or card.image_url.startswith('/'):
+                    return JsonResponse({'url': card.image_url})
+                else:
+                    return JsonResponse({'url': f"{settings.MEDIA_URL}{card.image_url}"})
+                    
+        except Card.DoesNotExist:
+            pass
+            
+    return JsonResponse({'url': None})

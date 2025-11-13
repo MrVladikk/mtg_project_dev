@@ -1,71 +1,122 @@
 {% extends "mtg_app/base.html" %}
 
-{% block title %}Создание колоды — MTG Коллекция{% endblock %}
+{% block title %}Редактор колоды{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
+
+<style>
+    /* --- 1. УБИРАЕМ ДВОЙНЫЕ СПИСКИ --- */
+    /* Скрываем оригинальный select, если Select2 активен */
+    select.select2-hidden-accessible {
+        position: absolute !important;
+        width: 1px !important;
+        height: 1px !important;
+        padding: 0 !important;
+        margin: -1px !important;
+        overflow: hidden !important;
+        clip: rect(0,0,0,0) !important;
+        border: 0 !important;
+    }
+
+    /* --- 2. Стилизация инпутов --- */
+    input[type="text"], input[type="number"], textarea, .form-control {
+        background-color: #000 !important;
+        border: 1px solid #444;
+        color: #fff !important;
+        border-radius: 4px;
+        padding: 8px;
+        width: 100%;
+    }
+    input:focus, textarea:focus {
+        border-color: #f6c25c !important;
+        outline: none;
+    }
+
+    /* --- 3. Select2 Dark --- */
+    .select2-container--bootstrap-5 .select2-selection {
+        background-color: #000 !important;
+        border-color: #444 !important;
+        color: #fff !important;
+    }
+    .select2-container--bootstrap-5 .select2-dropdown {
+        background-color: #17171c !important;
+        border-color: #444 !important;
+    }
+    .select2-results__option { color: #ccc !important; }
+    .select2-results__option--highlighted {
+        background-color: #f6c25c !important; color: #000 !important;
+    }
+    /* Убираем белый фон в поиске */
+    .select2-search__field {
+        background-color: #222 !important;
+        color: #fff !important; 
+        caret-color: #fff;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
   <div class="col-lg-8">
-    
-    <div class="card bg-dark-panel border-warning border-opacity-50 shadow-lg">
+    <div class="card bg-dark-panel border-warning border-opacity-50 shadow-lg mb-5">
       <div class="card-header bg-transparent border-secondary py-3">
         <h3 class="mb-0 fw-bold text-white text-center">
-          <i class="bi bi-stack text-warning"></i> Создание колоды
+          <i class="bi bi-stack text-warning"></i> Редактор колоды
         </h3>
       </div>
       
       <div class="card-body p-4">
-        <form method="post">
+        <form method="post" id="deck-form">
           {% csrf_token %}
           
-          <div class="mb-4">
-            <h5 class="text-warning border-bottom border-secondary pb-2 mb-3">Информация</h5>
-            
+          <div class="mb-4 p-3 rounded bg-black bg-opacity-25 border border-secondary">
             {% for field in form %}
               <div class="mb-3">
-                <label for="{{ field.id_for_label }}" class="form-label text-muted small text-uppercase fw-bold mb-1">
-                  {{ field.label }}
-                </label>
-                <div class="input-group">
-                  {{ field }}
-                </div>
-                {% if field.errors %}
-                  <div class="text-danger small mt-1">{{ field.errors }}</div>
-                {% endif %}
+                <label class="form-label text-muted small text-uppercase fw-bold">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors }}</div>{% endif %}
               </div>
             {% endfor %}
           </div>
 
           <div class="mb-4">
             <div class="d-flex justify-content-between align-items-center border-bottom border-secondary pb-2 mb-3">
-              <h5 class="text-warning mb-0">Карты</h5>
-              <button type="button" id="add-card-btn" class="btn btn-sm btn-outline-light">
+              <h5 class="text-white mb-0">Карты</h5>
+              <button type="button" id="add-card-btn" class="btn btn-sm btn-warning fw-bold">
                 <i class="bi bi-plus-lg"></i> Добавить карту
               </button>
             </div>
 
-            {{ formset.management_form }}
+            <div id="management-form-wrapper">
+                {{ formset.management_form }}
+            </div>
             
-            <div id="card-forms" class="d-flex flex-column gap-2">
+            <div id="formset-container" class="d-flex flex-column gap-2">
               {% for form in formset %}
-                <div class="card-form-row row g-2 align-items-start">
-                  {% for field in form %}
-                    {% if not field.is_hidden %}
-                      <div class="col">
-                        {{ field }}
-                        {% if field.errors %}
-                          <div class="text-danger small" style="font-size: 0.75rem;">{{ field.errors.0 }}</div>
-                        {% endif %}
-                      </div>
-                    {% else %}
-                      {{ field }}
-                    {% endif %}
+                <div class="card-row row g-2 align-items-end bg-dark p-2 rounded border border-secondary">
+                  {% for hidden in form.hidden_fields %}
+                    {{ hidden }}
                   {% endfor %}
+
+                  <div class="col">
+                    {{ form.card }}
+                    {% if form.card.errors %}
+                        <div class="text-danger small">{{ form.card.errors }}</div>
+                    {% endif %}
+                  </div>
+
+                  <div class="col-3 col-md-2">
+                    <label class="small text-muted d-block mb-1">Кол-во</label>
+                    {{ form.quantity }}
+                  </div>
                   
                   {% if form.instance.pk %}
-                    <div class="col-auto d-flex align-items-center pt-2">
+                    <div class="col-auto pb-1">
                       <div class="form-check">
                         {{ form.DELETE }}
-                        <label class="form-check-label text-danger small" for="{{ form.DELETE.id_for_label }}">Ud.</label>
+                        <label class="text-danger small"><i class="bi bi-trash"></i></label>
                       </div>
                     </div>
                   {% endif %}
@@ -74,86 +125,143 @@
             </div>
           </div>
 
-          <div class="d-flex justify-content-between align-items-center mt-5 pt-3 border-top border-secondary">
-            <a href="{% url 'mtg_app:deck_list' %}" class="text-muted text-decoration-none transition-hover">
-              <i class="bi bi-arrow-left"></i> Отмена
-            </a>
-            <button type="submit" class="btn btn-warning fw-bold px-5 py-2">
-              Сохранить колоду
-            </button>
+          <div class="d-flex justify-content-between align-items-center mt-4">
+            <a href="{% url 'mtg_app:deck_list' %}" class="btn btn-outline-light">Отмена</a>
+            <button type="submit" class="btn btn-warning fw-bold px-5" id="submit-btn">Сохранить</button>
           </div>
         </form>
       </div>
     </div>
-
   </div>
-</div>
 
-<div id="empty-form" style="display: none;">
-  <div class="card-form-row row g-2 align-items-start mt-2">
-    {% for field in formset.empty_form %}
-      {% if not field.is_hidden %}
-        <div class="col">
-          {{ field }}
+  <div class="col-lg-4 d-none d-lg-block">
+    <div class="sticky-top" style="top: 100px;">
+      <div class="card bg-black border-warning border-opacity-50">
+        <div class="card-body text-center p-3">
+          <h6 class="text-muted text-uppercase mb-3">Предпросмотр</h6>
+          <div class="mtg-card-img-wrapper rounded border border-secondary" style="position: relative; min-height: 300px;">
+            <img src="" id="card-preview-img" style="display: none; width: 100%; height: 100%; object-fit: contain;">
+            <div id="card-preview-placeholder" class="d-flex align-items-center justify-content-center text-muted h-100 w-100" style="position: absolute; top: 0;">
+              <div class="p-4"><i class="bi bi-card-image display-4 mb-2"></i><br>Выберите карту</div>
+            </div>
+          </div>
+          <p id="preview-name" class="mt-2 text-white fw-bold mb-0">&nbsp;</p>
         </div>
-      {% else %}
-        {{ field }}
-      {% endif %}
-    {% endfor %}
+      </div>
+    </div>
   </div>
 </div>
 
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
-    const addBtn = document.getElementById('add-card-btn');
-    const cardForms = document.getElementById('card-forms');
-    const totalForms = document.getElementById('id_deck_cards-TOTAL_FORMS');
-    
-    // Берем HTML из скрытого шаблона
-    const emptyFormHtml = document.getElementById('empty-form').innerHTML;
-
-    addBtn.addEventListener('click', function() {
-      const formIdx = totalForms.value;
-      
-      // Заменяем __prefix__ на текущий индекс
-      const newFormHtml = emptyFormHtml.replace(/__prefix__/g, formIdx);
-      
-      // Добавляем в DOM
-      const newDiv = document.createElement('div');
-      newDiv.innerHTML = newFormHtml; // Обертка, чтобы вставить содержимое
-      
-      // Вставляем содержимое (первый ребенок, т.к. шаблон уже содержит row)
-      cardForms.appendChild(newDiv.firstElementChild);
-      
-      totalForms.value = parseInt(formIdx) + 1;
-    });
-  });
+<script type="text/template" id="empty-form-template">
+  <div class="card-row row g-2 align-items-end bg-dark p-2 rounded border border-secondary mt-2">
+      {% for hidden in formset.empty_form.hidden_fields %}
+          {{ hidden }}
+      {% endfor %}
+      <div class="col">
+          {{ formset.empty_form.card }}
+      </div>
+      <div class="col-3 col-md-2">
+          <label class="small text-muted d-block mb-1">Кол-во</label>
+          {{ formset.empty_form.quantity }}
+      </div>
+      <div class="col-auto pb-1">
+         <button type="button" class="btn btn-sm btn-outline-danger remove-row-btn"><i class="bi bi-x-lg"></i></button>
+      </div>
+  </div>
 </script>
 
-<style>
-  /* Стилизация всех инпутов и селектов внутри этой формы */
-  input[type="text"], 
-  input[type="number"], 
-  textarea, 
-  select {
-    width: 100%;
-    background-color: #000 !important;
-    border: 1px solid var(--mtg-border);
-    border-radius: 8px;
-    padding: 10px;
-    color: #fff;
-    transition: border-color 0.2s;
-  }
+{% endblock %}
 
-  input:focus, textarea:focus, select:focus {
-    border-color: var(--mtg-gold);
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(246, 194, 92, 0.15);
-  }
-  
-  /* Для чекбокса удаления */
-  input[type="checkbox"] {
-    width: auto !important;
-  }
-</style>
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+
+<script>
+$(document).ready(function() {
+    console.log("--- Deck Editor: Prefix 'deck_cards' ---");
+
+    // Находим инпут TOTAL_FORMS по ID, который генерирует Django с prefix='deck_cards'
+    var totalFormsInput = $('#id_deck_cards-TOTAL_FORMS');
+    
+    if (totalFormsInput.length === 0) {
+        console.error("CRITICAL: Input #id_deck_cards-TOTAL_FORMS not found!");
+        // Попытка найти по имени, если ID отличается
+        totalFormsInput = $('input[name="deck_cards-TOTAL_FORMS"]');
+    }
+    
+    console.log("Total forms input:", totalFormsInput);
+
+    function initSelect2(element) {
+        $(element).select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            placeholder: 'Поиск карты...',
+            allowClear: true
+        });
+
+        $(element).on('select2:select', function (e) {
+            var cardId = e.params.data.id;
+            var cardName = e.params.data.text;
+            updatePreview(cardId, cardName);
+        });
+    }
+
+    function updatePreview(cardId, cardName) {
+        if (!cardId) return;
+        $.ajax({
+            url: "{% url 'mtg_app:get_card_image' %}",
+            data: { 'id': cardId },
+            success: function(data) {
+                if (data.url) {
+                    $('#card-preview-placeholder').hide();
+                    $('#card-preview-img').attr('src', data.url).show();
+                    $('#preview-name').text(cardName);
+                } else {
+                    $('#card-preview-img').hide();
+                    $('#card-preview-placeholder').show();
+                    $('#preview-name').text(cardName);
+                }
+            }
+        });
+    }
+
+    // Инициализация существующих (если редактируем)
+    $('#formset-container select').each(function() {
+        initSelect2(this);
+    });
+
+    // Добавление
+    $('#add-card-btn').click(function(e) {
+        e.preventDefault();
+        
+        if (!totalFormsInput.length) {
+            alert("Ошибка: Не найдено поле TOTAL_FORMS. Проверьте консоль.");
+            return;
+        }
+
+        var formIdx = parseInt(totalFormsInput.val());
+        console.log("Adding row index:", formIdx);
+
+        // Берем шаблон
+        var template = $('#empty-form-template').html();
+        // Заменяем __prefix__ на текущий индекс (например deck_cards-0-card)
+        var newRowHtml = template.replace(/__prefix__/g, formIdx);
+        
+        $('#formset-container').append(newRowHtml);
+        totalFormsInput.val(formIdx + 1);
+
+        // Инициализируем Select2 на новой строке
+        var newRow = $('#formset-container .card-row').last();
+        var newSelect = newRow.find('select');
+        initSelect2(newSelect);
+        newSelect.select2('open');
+    });
+
+    // Удаление
+    $(document).on('click', '.remove-row-btn', function() {
+        $(this).closest('.card-row').remove();
+        // Не уменьшаем TOTAL_FORMS, Django сам пропустит удаленные индексы
+    });
+});
+</script>
 {% endblock %}

@@ -33,4 +33,10 @@ urlpatterns = [
     ),
     path("logout/", views.custom_logout, name="logout"),
     path("register/", views.register, name="register"),
+    
+    # ...
+    path('deck/<int:pk>/edit/', views.deck_edit, name='deck_edit'),
+    path('deck/<int:pk>/delete/', views.deck_delete, name='deck_delete'),
+    # ...
+    path('api/get_card_image/', views.get_card_image, name='get_card_image'),
 ]

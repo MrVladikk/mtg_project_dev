@@ -113,6 +113,28 @@ class Deck(models.Model):
     )
     is_private = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+    cards = models.ManyToManyField(Card, through='DeckCard')
 
     def __str__(self) -> str:
         return self.name
+
+    def get_total_quantity(self):
+        """Считает сумму всех карт (учитывая количество каждой)"""
+        total = 0
+        for item in self.deckcard_set.all():
+            total += item.quantity
+        return total
+
+class DeckCard(models.Model):
+    deck = models.ForeignKey(Deck, on_delete=models.CASCADE)
+    card = models.ForeignKey(Card, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=1, verbose_name="Количество")
+
+    class Meta:
+        # Гарантирует, что одна и та же карта не дублируется в списке (только увеличивается кол-во)
+        unique_together = ('deck', 'card')
+        verbose_name = "Карта в колоде"
+        verbose_name_plural = "Карты в колодах"
+
+    def __str__(self):
+        return f"{self.quantity}x {self.card.name} ({self.deck.name})"

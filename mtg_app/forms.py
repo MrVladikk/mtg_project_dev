@@ -1,8 +1,8 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-
-from .models import Card, Deck
+from django.forms import inlineformset_factory
+from .models import Card, Deck, DeckCard
 
 
 class CustomUserCreationForm(UserCreationForm):
@@ -16,26 +16,31 @@ class CustomUserCreationForm(UserCreationForm):
 class CardForm(forms.ModelForm):
     class Meta:
         model = Card
-        fields = [
-            "name",
-            "set",
-            "quantity",
-            "image_url",
-            "language",
-            "purchase_price",
-            "rarity",
-            "condition",
-        ]  # При необходимости добавьте другие поля
-
+        fields = '__all__' # Или перечислите поля
 
 class DeckForm(forms.ModelForm):
-    is_private = forms.BooleanField(
-        required=False,
-        label="Сделать колоду приватной",
-        widget=forms.CheckboxInput(attrs={"class": "form-check-input"}),
-    )
-
     class Meta:
+        model = Deck
+        fields = ['name', 'description', 'is_private'] # Проверьте, какие поля есть у вас в модели Deck
+        labels = {
+            'name': 'Название колоды',
+            'description': 'Описание',
+            'is_private': 'Приватная колода',
+        }
+        widgets = {
+            'description': forms.Textarea(attrs={'rows': 3}),
+        }
+
+# --- ВОТ ЭТОГО КОДА НЕ ХВАТАЛО ---
+DeckCardFormSet = inlineformset_factory(
+    parent_model=Deck,
+    model=DeckCard,
+    fields=['card', 'quantity'],
+    extra=0, # Не создавать пустые строки автоматически (мы делаем это через JS)
+    can_delete=True # Разрешить удаление
+)
+
+class Meta:
         model = Deck  # Добавьте это!
         fields = ["name", "description", "cards", "is_private", "owner"]
 
