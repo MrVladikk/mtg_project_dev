@@ -11,7 +11,9 @@ from django.http import HttpResponseForbidden
 from django.http import JsonResponse
 from django.conf import settings
 
-from mtg_app.models import Card, Deck, Set
+
+from mtg_app.models import Card, Deck, Set, DeckCard
+from .filters import CardFilter
 
 from .forms import CardForm, DeckForm
 from .forms import DeckForm, DeckCardFormSet, CardForm
@@ -28,33 +30,39 @@ def home(request):
 
 
 def card_list(request):
-    query = request.GET.get("q")
-    sort = request.GET.get("sort")
+    
+    card_list_qs = Card.objects.all()
 
-    if query:
-        cards = Card.objects.filter(
-            Q(name__icontains=query) | Q(set__name__icontains=query) | Q(rarity__icontains=query)
-        )
-        total_cards = cards.aggregate(total=Sum("quantity"))["total"] or 0
+    # 1. Применяем наш новый "умный" фильтр
+    card_filter = CardFilter(request.GET, queryset=card_list_qs)
+    
+    # 2. Получаем отфильтрованный список
+    filtered_cards = card_filter.qs
+
+    # 3. Применяем сортировку поверх фильтров
+    sort_option = request.GET.get("sort")
+    if sort_option == 'alphabetical':
+        filtered_cards = filtered_cards.order_by('name')
+    elif sort_option == 'price':
+        filtered_cards = filtered_cards.order_by('purchase_price')
+    elif sort_option == 'price_desc':
+        filtered_cards = filtered_cards.order_by('-purchase_price')
     else:
-        cards = Card.objects.all()
-        total_cards = Card.objects.aggregate(total=Sum("quantity"))["total"] or 0
+        filtered_cards = filtered_cards.order_by('-id')
 
-    if sort == "alphabetical":
-        cards = cards.order_by("name")
-    elif sort == "price":
-        cards = cards.order_by("purchase_price")
-    elif sort == "price_desc":
-        cards = cards.order_by("-purchase_price")
-    else:
-        cards = cards.order_by("-id")
-
+    # 5. Считаем общее количество
+    total_cards_sum = filtered_cards.aggregate(total=Sum("quantity"))["total"] or 0
+    
     return render(
         request,
         "mtg_app/card_list.html",
-        {"cards": cards, "query": query, "total_cards": total_cards, "sort": sort},
+        {
+            'filter': card_filter,  # Передаем форму фильтра
+            'cards': filtered_cards,
+            'total_cards': total_cards_sum, 
+            'sort': sort_option # Передаем 'sort' для <select>
+        },
     )
-
 
 def card_detail(request, pk):
     card = get_object_or_404(Card, id=pk)
@@ -292,3 +300,58 @@ def get_card_image(request):
             pass
             
     return JsonResponse({'url': None})
+
+# --- API ДЛЯ "ДОБАВИТЬ В КОЛОДУ" ---
+
+@login_required
+def get_user_decks(request):
+    """
+    API: Возвращает список колод пользователя (ID и Имя) 
+    для модального окна.
+    """
+    decks = Deck.objects.filter(owner=request.user).order_by('-created_at')
+    # Преобразуем в простой список словарей, понятный для JavaScript
+    decks_list = list(decks.values('id', 'name'))
+    return JsonResponse({'decks': decks_list})
+
+
+@login_required
+@require_POST # Эта функция безопасности (принимает только POST-запросы)
+def add_card_to_deck(request):
+    """
+    API: Добавляет 1 карту (card_id) в выбранную колоду (deck_id).
+    """
+    try:
+        card_id = request.POST.get('card_id')
+        deck_id = request.POST.get('deck_id')
+
+        card = Card.objects.get(pk=card_id)
+        deck = Deck.objects.get(pk=deck_id)
+
+        # Безопасность: Убедимся, что пользователь - владелец этой колоды
+        if deck.owner != request.user:
+            return HttpResponseForbidden('Вы не являетесь владельцем этой колоды.')
+
+        # Находим или создаем запись
+        deck_card, created = DeckCard.objects.get_or_create(
+            deck=deck,
+            card=card,
+            defaults={'quantity': 1} # Если создаем, то 1 штука
+        )
+
+        if not created:
+            # Если карта уже была, просто увеличиваем количество
+            deck_card.quantity += 1
+            deck_card.save(update_fields=['quantity'])
+
+        return JsonResponse({
+            'status': 'success',
+            'message': f"Карта '{card.name}' добавлена в '{deck.name}'. (Всего: {deck_card.quantity})",
+        })
+
+    except Card.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Карта не найдена.'}, status=404)
+    except Deck.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Колода не найдена.'}, status=404)
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)

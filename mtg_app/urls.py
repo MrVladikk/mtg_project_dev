@@ -39,4 +39,8 @@ urlpatterns = [
     path('deck/<int:pk>/delete/', views.deck_delete, name='deck_delete'),
     # ...
     path('api/get_card_image/', views.get_card_image, name='get_card_image'),
+    
+    # --- ДОБАВЬТЕ ЭТИ ДВЕ СТРОКИ (лучше в конец) ---
+    path('api/get_user_decks/', views.get_user_decks, name='get_user_decks'),
+    path('api/add_card_to_deck/', views.add_card_to_deck, name='add_card_to_deck'),
 ]

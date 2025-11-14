@@ -1,7 +1,8 @@
 import os
 from pathlib import Path
 from urllib.parse import urlparse
-
+from celery.schedules import crontab
+import dj_database_url
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -9,6 +10,7 @@ load_dotenv()
 # Безопасность и режим
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "insecure")
 DEBUG = os.getenv("DJANGO_DEBUG", "False").lower() == "true"
+ALLOWED_HOSTS_STR = os.environ.get('ALLOWED_HOSTS', '')
 
 ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "*").split(",") if h]
 CSRF_TRUSTED_ORIGINS = [o.strip() for o in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if o]
@@ -25,6 +27,8 @@ INSTALLED_APPS = [
     "forum.apps.ForumConfig",
     "data_processing.apps.DataProcessingConfig",
     "django_filters",
+    'bootstrap5',
+    'django_celery_results',
 ]
 
 MIDDLEWARE = [
@@ -100,3 +104,21 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 LOGIN_REDIRECT_URL = "mtg_app:home"
 LOGOUT_REDIRECT_URL = "mtg_app:home"
+
+# --- CELERY SETTINGS ---
+# Указываем, что Redis (наш брокер) работает на стандартном порту
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'django-db' # <-- Теперь Celery будет писать в вашу базу
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE # Используем часовой пояс из Django
+
+# --- CELERY BEAT SCHEDULE ---
+CELERY_BEAT_SCHEDULE = {
+    'update-card-prices-daily': {
+        'task': 'data_processing.tasks.update_all_card_prices',
+        # crontab(minute=0, hour=4) = запускать в 4:00 ночи
+        'schedule': crontab(minute=0, hour=4), 
+    },
+}

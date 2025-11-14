@@ -11,11 +11,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-
   <link rel="stylesheet" href="{% static 'mtg_app/styles.css' %}?v=2.0">
   
   {% block extra_css %}{% endblock %}
@@ -27,11 +24,9 @@
       <a class="navbar-brand fw-bold text-warning" href="{% url 'mtg_app:home' %}">
         <i class="bi bi-collection-play-fill"></i> MTG КОЛЛЕКЦИЯ
       </a>
-      
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
       </button>
-
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav me-auto">
           <li class="nav-item"><a class="nav-link" href="{% url 'mtg_app:card_list' %}">Карты</a></li>
@@ -39,7 +34,6 @@
           <li class="nav-item"><a class="nav-link" href="{% url 'mtg_app:deck_list' %}">Колоды</a></li>
           <li class="nav-item"><a class="nav-link" href="{% url 'forum:thread_list' %}">Форум</a></li>
         </ul>
-        
         <div class="d-flex gap-2 align-items-center">
           {% if user.is_authenticated %}
             <div class="dropdown">
@@ -62,6 +56,15 @@
       </div>
     </div>
   </nav>
+  
+  <div id="import-status-banner" class="bg-primary text-white p-2 text-center sticky-top" style="display: none; z-index: 1050;">
+    <div class="container">
+        <span id="import-status-text">Идет импорт...</span>
+        <div class="progress" role="progressbar" style="height: 5px;">
+            <div id="import-status-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-warning" style="width: 0%"></div>
+        </div>
+    </div>
+  </div>
 
   <main class="container my-4 flex-grow-1">
     {% if messages %}
@@ -84,9 +87,118 @@
     <div class="container text-center text-muted">
       <p class="mb-0 small">© 2025 MTG Коллекция. Все права защищены.</p>
     </div>
+    
+    <div class="modal fade" id="addToDeckModal" tabindex="-1" aria-labelledby="addToDeckModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark-panel border-warning border-opacity-50">
+          <div class="modal-header border-secondary">
+            <h5 class="modal-title text-warning" id="addToDeckModalLabel">
+              <i class="bi bi-plus-circle"></i> Добавить в колоду...
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p class="text-muted small">Куда вы хотите добавить карту <strong id="modal-card-name" class="text-white">...</strong>?</p>
+            <div id="modal-deck-list" class="list-group" style="max-height: 300px; overflow-y: auto;">
+              </div>
+            <div id="modal-status-message" class="mt-3"></div>
+          </div>
+        </div>
+      </div>
+    </div>
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  {% block extra_js %}{% endblock %}
+  
+  <script src="{% static 'mtg_app/js/jquery.min.js' %}"></script>
+  
+  {% block extra_js %}
+  <script>
+    // Ждем, пока и jQuery, и DOM загрузятся
+    $(document).ready(function() {
+      console.log("jQuery loaded. Base AJAX/Celery scripts running.");
+
+      // --- 1. ЛОГИКА CELERY (Прогресс-бар) ---
+      const statusUrl = "{% url 'data_processing:get_task_status' %}";
+      let taskCheckInterval = setInterval(checkTaskStatus, 3000);
+
+      function checkTaskStatus() {
+        $.ajax({
+          url: statusUrl,
+          success: function(data) {
+            const banner = $('#import-status-banner');
+            const statusText = $('#import-status-text');
+            const progressBar = $('#import-status-bar');
+            
+            if (data.state === 'PROGRESS' && data.progress) {
+              let percent = Math.floor((data.progress.current / data.progress.total) * 100);
+              statusText.text(`Идет импорт... (${data.progress.current} из ${data.progress.total})`);
+              progressBar.css('width', percent + '%');
+              banner.slideDown();
+            } else if (data.state === 'SUCCESS') {
+              clearInterval(taskCheckInterval);
+              banner.removeClass('bg-primary').addClass('bg-success');
+              progressBar.css('width', '100%');
+              let results = data.results;
+              statusText.text(`Импорт завершен! (Создано: ${results.created}, Обновлено: ${results.updated})`);
+              setTimeout(() => { banner.slideUp(); }, 5000);
+            } else if (data.state === 'FAILURE' || data.state === 'NOT_FOUND') {
+              clearInterval(taskCheckInterval);
+              banner.slideUp();
+            }
+          }
+        });
+      }
+
+      // --- 2. ЛОГИКА AJAX (Кнопка "+ в колоду") ---
+      let selectedCardId = null;
+
+      $(document).on('click', '.add-to-deck-btn', function() {
+        selectedCardId = $(this).data('card-id');
+        $('#modal-card-name').text($(this).data('card-name'));
+        $('#modal-status-message').html('');
+        $('#modal-deck-list').html('<div class="list-group-item bg-dark text-muted text-center"><div class="spinner-border spinner-border-sm"></div> Загрузка...</div>');
+        
+        $.ajax({
+          url: "{% url 'mtg_app:get_user_decks' %}",
+          success: function(data) {
+            const deckList = $('#modal-deck-list');
+            deckList.empty();
+            if (data.decks && data.decks.length > 0) {
+              data.decks.forEach(function(deck) {
+                deckList.append(`<button type="button" class="list-group-item list-group-item-action bg-dark-panel text-white border-secondary deck-select-btn" data-deck-id="${deck.id}">${deck.name}</button>`);
+              });
+            } else {
+              deckList.html('<p class="text-muted text-center">У вас нет колод. <a href="{% url "mtg_app:add_deck" %}" class="text-warning">Создать?</a></p>');
+            }
+          }
+        });
+      });
+
+      $(document).on('click', '.deck-select-btn', function() {
+        const deckId = $(this).data('deck-id');
+        const statusDiv = $('#modal-status-message');
+        statusDiv.html('<div class="text-muted"><div class="spinner-border spinner-border-sm"></div> Добавляем...</div>');
+
+        $.ajax({
+          type: 'POST',
+          url: "{% url 'mtg_app:add_card_to_deck' %}",
+          data: {
+            'card_id': selectedCardId,
+            'deck_id': deckId,
+            'csrfmiddlewaretoken': '{{ csrf_token }}'
+          },
+          success: function(data) {
+            statusDiv.html(`<div class="alert alert-${data.status === 'success' ? 'success' : 'danger'} small p-2">${data.message}</div>`);
+          },
+          error: function() {
+            statusDiv.html('<div class="alert alert-danger small p-2">Ошибка сервера.</div>');
+          }
+        });
+      });
+    });
+  </script>
+  {% endblock %}
+  
 </body>
 </html>

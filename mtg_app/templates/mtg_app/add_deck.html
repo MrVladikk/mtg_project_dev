@@ -7,58 +7,56 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
 
 <style>
-    /* --- 1. УБИРАЕМ ДВОЙНЫЕ СПИСКИ --- */
-    /* Скрываем оригинальный select, если Select2 активен */
+    /* 1. ФИКС "КРИВОГО ИНТЕРФЕЙСА" (Двойные поля) */
     select.select2-hidden-accessible {
-        position: absolute !important;
+        display: none !important;
+        visibility: hidden !important;
+        position: absolute !important; 
         width: 1px !important;
         height: 1px !important;
+        overflow: hidden !important;
         padding: 0 !important;
         margin: -1px !important;
-        overflow: hidden !important;
-        clip: rect(0,0,0,0) !important;
         border: 0 !important;
+        clip: rect(0 0 0 0) !important;
     }
 
-    /* --- 2. Стилизация инпутов --- */
-    input[type="text"], input[type="number"], textarea, .form-control {
+    /* 2. Стилизация инпутов (Темная тема) */
+    input[type="text"], input[type="number"], textarea, .form-control,
+    .select2-container--bootstrap-5 .select2-selection {
         background-color: #000 !important;
-        border: 1px solid #444;
+        border: 1px solid #444 !important;
         color: #fff !important;
         border-radius: 4px;
         padding: 8px;
-        width: 100%;
+        width: 100% !important; /* Гарантируем ширину */
     }
     input:focus, textarea:focus {
         border-color: #f6c25c !important;
         outline: none;
     }
 
-    /* --- 3. Select2 Dark --- */
-    .select2-container--bootstrap-5 .select2-selection {
-        background-color: #000 !important;
-        border-color: #444 !important;
-        color: #fff !important;
-    }
-    .select2-container--bootstrap-5 .select2-dropdown {
-        background-color: #17171c !important;
-        border-color: #444 !important;
-    }
+    /* 3. Стили Select2 (Выпадающий список) */
+    .select2-dropdown { background-color: #17171c !important; border-color: #444 !important; }
     .select2-results__option { color: #ccc !important; }
-    .select2-results__option--highlighted {
-        background-color: #f6c25c !important; color: #000 !important;
+    .select2-results__option--highlighted { background-color: #f6c25c !important; color: #000 !important; }
+    .select2-search__field { background-color: #222 !important; color: #fff !important; }
+    
+    /* 4. Стиль для подсветки дубликата */
+    .row-highlight {
+        animation: highlight 1s ease;
     }
-    /* Убираем белый фон в поиске */
-    .select2-search__field {
-        background-color: #222 !important;
-        color: #fff !important; 
-        caret-color: #fff;
+    @keyframes highlight {
+        from { background-color: #f6c25c; }
+        to { background-color: #303035; } /* Возвращаем к .bg-dark */
     }
 </style>
 {% endblock %}
 
+
 {% block content %}
 <div class="row justify-content-center">
+  
   <div class="col-lg-8">
     <div class="card bg-dark-panel border-warning border-opacity-50 shadow-lg mb-5">
       <div class="card-header bg-transparent border-secondary py-3">
@@ -72,6 +70,7 @@
           {% csrf_token %}
           
           <div class="mb-4 p-3 rounded bg-black bg-opacity-25 border border-secondary">
+            <h5 class="text-warning mb-3">Настройки</h5>
             {% for field in form %}
               <div class="mb-3">
                 <label class="form-label text-muted small text-uppercase fw-bold">{{ field.label }}</label>
@@ -83,41 +82,31 @@
 
           <div class="mb-4">
             <div class="d-flex justify-content-between align-items-center border-bottom border-secondary pb-2 mb-3">
-              <h5 class="text-white mb-0">Карты</h5>
+              <h5 class="text-white mb-0">Список карт</h5>
               <button type="button" id="add-card-btn" class="btn btn-sm btn-warning fw-bold">
                 <i class="bi bi-plus-lg"></i> Добавить карту
               </button>
             </div>
 
-            <div id="management-form-wrapper">
+            <div id="formset-management">
                 {{ formset.management_form }}
             </div>
             
             <div id="formset-container" class="d-flex flex-column gap-2">
               {% for form in formset %}
                 <div class="card-row row g-2 align-items-end bg-dark p-2 rounded border border-secondary">
-                  {% for hidden in form.hidden_fields %}
-                    {{ hidden }}
-                  {% endfor %}
-
+                  {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
                   <div class="col">
                     {{ form.card }}
-                    {% if form.card.errors %}
-                        <div class="text-danger small">{{ form.card.errors }}</div>
-                    {% endif %}
+                    {% if form.card.errors %}<div class="text-danger small">{{ form.card.errors }}</div>{% endif %}
                   </div>
-
                   <div class="col-3 col-md-2">
                     <label class="small text-muted d-block mb-1">Кол-во</label>
                     {{ form.quantity }}
                   </div>
-                  
                   {% if form.instance.pk %}
                     <div class="col-auto pb-1">
-                      <div class="form-check">
-                        {{ form.DELETE }}
-                        <label class="text-danger small"><i class="bi bi-trash"></i></label>
-                      </div>
+                      <div class="form-check">{{ form.DELETE }}<label class="text-danger small"><i class="bi bi-trash"></i></label></div>
                     </div>
                   {% endif %}
                 </div>
@@ -127,7 +116,7 @@
 
           <div class="d-flex justify-content-between align-items-center mt-4">
             <a href="{% url 'mtg_app:deck_list' %}" class="btn btn-outline-light">Отмена</a>
-            <button type="submit" class="btn btn-warning fw-bold px-5" id="submit-btn">Сохранить</button>
+            <button type="submit" class="btn btn-warning fw-bold px-5">Сохранить</button>
           </div>
         </form>
       </div>
@@ -157,6 +146,7 @@
       {% for hidden in formset.empty_form.hidden_fields %}
           {{ hidden }}
       {% endfor %}
+      
       <div class="col">
           {{ formset.empty_form.card }}
       </div>
@@ -165,7 +155,7 @@
           {{ formset.empty_form.quantity }}
       </div>
       <div class="col-auto pb-1">
-         <button type="button" class="btn btn-sm btn-outline-danger remove-row-btn"><i class="bi bi-x-lg"></i></button>
+         <button type="button" class="btn btn-sm btn-outline-danger remove-row-btn" title="Удалить строку"><i class="bi bi-x-lg"></i></button>
       </div>
   </div>
 </script>
@@ -178,19 +168,9 @@
 
 <script>
 $(document).ready(function() {
-    console.log("--- Deck Editor: Prefix 'deck_cards' ---");
+    console.log("--- Deck Editor: Duplicate Handler (v2) ---");
 
-    // Находим инпут TOTAL_FORMS по ID, который генерирует Django с prefix='deck_cards'
-    var totalFormsInput = $('#id_deck_cards-TOTAL_FORMS');
-    
-    if (totalFormsInput.length === 0) {
-        console.error("CRITICAL: Input #id_deck_cards-TOTAL_FORMS not found!");
-        // Попытка найти по имени, если ID отличается
-        totalFormsInput = $('input[name="deck_cards-TOTAL_FORMS"]');
-    }
-    
-    console.log("Total forms input:", totalFormsInput);
-
+    // --- 1. Настройка Select2 ---
     function initSelect2(element) {
         $(element).select2({
             theme: 'bootstrap-5',
@@ -199,14 +179,44 @@ $(document).ready(function() {
             allowClear: true
         });
 
+        // --- УМНЫЙ ОБРАБОТЧИК ВЫБОРА (с дедупликацией) ---
         $(element).on('select2:select', function (e) {
             var cardId = e.params.data.id;
             var cardName = e.params.data.text;
-            updatePreview(cardId, cardName);
+            loadPreview(cardId, cardName);
+
+            var currentRow = $(this).closest('.card-row');
+            
+            var existingRow = null;
+            $('#formset-container .card-row').each(function() {
+                if ($(this).is(currentRow)) return; 
+                
+                // Ищем select, у которого ID заканчивается на '-card'
+                var select = $(this).find('select[id$="-card"]'); 
+                if (select.val() == cardId) {
+                    existingRow = $(this);
+                    return false; 
+                }
+            });
+
+            // Если нашли дубликат
+            if (existingRow) {
+                // 1. Увеличиваем количество в старой строке
+                var qtyInput = existingRow.find('input[id$="-quantity"]');
+                qtyInput.val(parseInt(qtyInput.val() || 0) + 1);
+                
+                // 2. Подсвечиваем старую строку
+                existingRow.addClass('row-highlight');
+                setTimeout(function() { existingRow.removeClass('row-highlight'); }, 1000);
+
+                // 3. Удаляем новую (текущую) строку
+                currentRow.remove();
+            }
         });
     }
 
-    function updatePreview(cardId, cardName) {
+    // --- 2. Превью карты ---
+    function loadPreview(cardId, cardName) {
         if (!cardId) return;
         $.ajax({
             url: "{% url 'mtg_app:get_card_image' %}",
@@ -219,32 +229,33 @@ $(document).ready(function() {
                 } else {
                     $('#card-preview-img').hide();
                     $('#card-preview-placeholder').show();
-                    $('#preview-name').text(cardName);
+                    $('#preview-name').text(cardName + " (Нет фото)");
                 }
             }
         });
     }
 
-    // Инициализация существующих (если редактируем)
-    $('#formset-container select').each(function() {
+    // --- 3. Инициализация (старт) ---
+    // Применяем Select2 ко всем select'ам с именем, содержащим 'card'
+    $('#formset-container select[name*="card"]').each(function() {
         initSelect2(this);
     });
 
-    // Добавление
+    // --- 4. Кнопка "Добавить карту" ---
     $('#add-card-btn').click(function(e) {
         e.preventDefault();
         
-        if (!totalFormsInput.length) {
-            alert("Ошибка: Не найдено поле TOTAL_FORMS. Проверьте консоль.");
+        // Жестко ищем по ID (prefix='deck_cards')
+        var totalFormsInput = $('#id_deck_cards-TOTAL_FORMS');
+        if (totalFormsInput.length === 0) {
+            console.error("CRITICAL: Не найдено поле #id_deck_cards-TOTAL_FORMS!");
             return;
         }
 
         var formIdx = parseInt(totalFormsInput.val());
-        console.log("Adding row index:", formIdx);
-
-        // Берем шаблон
+        
+        // --- ИСПРАВЛЕНИЕ: Берем HTML из шаблона
         var template = $('#empty-form-template').html();
-        // Заменяем __prefix__ на текущий индекс (например deck_cards-0-card)
         var newRowHtml = template.replace(/__prefix__/g, formIdx);
         
         $('#formset-container').append(newRowHtml);
@@ -254,14 +265,14 @@ $(document).ready(function() {
         var newRow = $('#formset-container .card-row').last();
         var newSelect = newRow.find('select');
         initSelect2(newSelect);
-        newSelect.select2('open');
+        newSelect.select2('open'); // Сразу открываем
     });
 
-    // Удаление
+    // --- 5. Удаление ---
     $(document).on('click', '.remove-row-btn', function() {
         $(this).closest('.card-row').remove();
-        // Не уменьшаем TOTAL_FORMS, Django сам пропустит удаленные индексы
     });
+
 });
 </script>
 {% endblock %}

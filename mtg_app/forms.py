@@ -1,52 +1,46 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from django.forms import inlineformset_factory
-from .models import Card, Deck, DeckCard
-
+from django.forms import inlineformset_factory # Важный импорт
+from .models import Card, Deck, DeckCard # Важный импорт
 
 class CustomUserCreationForm(UserCreationForm):
     email = forms.EmailField(required=True, help_text="Введите действующий email.")
-
     class Meta:
         model = User
         fields = ("username", "email", "password1", "password2")
 
-
 class CardForm(forms.ModelForm):
     class Meta:
         model = Card
-        fields = '__all__' # Или перечислите поля
+        fields = '__all__'
 
+# --- ЭТО ФОРМА ДЛЯ САМОЙ КОЛОДЫ ---
 class DeckForm(forms.ModelForm):
     class Meta:
         model = Deck
-        fields = ['name', 'description', 'is_private'] # Проверьте, какие поля есть у вас в модели Deck
+        # В этой форме НЕ ДОЛЖНО быть поля 'cards'
+        fields = ['name', 'description', 'is_private']
         labels = {
             'name': 'Название колоды',
             'description': 'Описание',
-            'is_private': 'Приватная колода',
+            'is_private': 'Приватная (видна только вам)',
         }
         widgets = {
             'description': forms.Textarea(attrs={'rows': 3}),
+            'is_private': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
-# --- ВОТ ЭТОГО КОДА НЕ ХВАТАЛО ---
+# --- ЭТО ФОРМСЕТ ДЛЯ СПИСКА КАРТ В КОЛОДЕ ---
+# (Он был сломан из-за мусора в файле)
 DeckCardFormSet = inlineformset_factory(
-    parent_model=Deck,
-    model=DeckCard,
-    fields=['card', 'quantity'],
-    extra=0, # Не создавать пустые строки автоматически (мы делаем это через JS)
-    can_delete=True # Разрешить удаление
+    parent_model=Deck,    # Главная модель
+    model=DeckCard,       # Модель связи
+    fields=['card', 'quantity'], # Поля, которые мы редактируем
+    extra=0,              # Не показывать пустые строки по умолчанию
+    can_delete=True,
+    widgets={
+        # Задаем стиль по умолчанию для поля количества
+        'quantity': forms.NumberInput(attrs={'value': 1, 'min': 1}),
+    }
 )
-
-class Meta:
-        model = Deck  # Добавьте это!
-        fields = ["name", "description", "cards", "is_private", "owner"]
-
-        # Если нужно настроить виджет для поля cards (например, выбор нескольких карт)
-        cards = forms.ModelMultipleChoiceField(
-            queryset=Card.objects.all(),
-            widget=forms.CheckboxSelectMultiple,  # Виджет для выбора нескольких карт
-            required=False,
-        )

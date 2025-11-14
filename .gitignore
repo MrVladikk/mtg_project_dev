@@ -39,3 +39,5 @@ pytest_cache/
 .pytest_cache/
 htmlcov/
 .coverage
+
+.env.prod

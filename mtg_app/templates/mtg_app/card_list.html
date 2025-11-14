@@ -1,21 +1,74 @@
 {% extends "mtg_app/base.html" %}
 {% load static %}
+{% load bootstrap5 %} {% block title %}Карты — MTG Коллекция{% endblock %}
 
-{% block title %}Карты — MTG Коллекция{% endblock %}
+{% block extra_css %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
+
+<style>
+  /* Принудительно делаем все поля темными */
+  .form-control, .form-select, .select2-selection {
+    background-color: #000 !important;
+    border: 1px solid #444 !important;
+    color: #fff !important;
+  }
+  .form-control:focus, .form-select:focus, .select2-selection:focus {
+    border-color: #f6c25c !important;
+    box-shadow: 0 0 0 3px rgba(246, 194, 92, 0.15) !important;
+    outline: none;
+  }
+  
+  /* Темная тема для выпадающего списка Select2 */
+  .select2-dropdown {
+    background-color: #17171c !important;
+    border-color: #444 !important;
+  }
+  .select2-results__option { color: #ccc !important; }
+  .select2-results__option--highlighted {
+    background-color: #f6c25c !important; color: #000 !important;
+  }
+  .select2-search__field {
+    background-color: #222 !important;
+    color: #fff !important; 
+    border-color: #555 !important;
+  }
+  
+  /* Стили для чекбоксов */
+  .form-check-input {
+    accent-color: #f6c25c;
+  }
+  .form-check-label {
+    font-size: 0.9rem;
+  }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="row">
+
   <div class="col-lg-3 mb-4">
-    <div class="card p-3 sticky-top" style="top: 80px; z-index: 1;">
-      <h4 class="mb-3"><i class="bi bi-search"></i> Фильтр</h4>
-      <form method="get">
+    <div class="card bg-dark-panel p-3 sticky-top shadow-sm" style="top: 80px; z-index: 1;">
+      
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0 text-white"><i class="bi bi-funnel-fill text-warning"></i> Фильтры</h4>
+        <a href="{% url 'mtg_app:card_list' %}" class="btn btn-sm btn-outline-light" title="Сбросить">Сбросить</a>
+      </div>
+
+      <form method="get" id="filter-form">
+        
         <div class="mb-3">
-          <label class="form-label text-muted small">Поиск</label>
-          <input type="text" name="q" class="form-control" value="{{ query|default:'' }}" placeholder="Название, сет...">
+          <label class="form-label text-muted small fw-bold">Название (поиск)</label>
+          {{ filter.form.name_search }} 
         </div>
         
         <div class="mb-3">
-          <label class="form-label text-muted small">Сортировка</label>
+          <label class="form-label text-muted small fw-bold">Текст карты</label>
+          {{ filter.form.oracle_text }}
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label text-muted small fw-bold">Сортировка</label>
           <select name="sort" class="form-select">
             <option value="">По новизне</option>
             <option value="alphabetical" {% if sort == "alphabetical" %}selected{% endif %}>А-Я</option>
@@ -24,8 +77,37 @@
           </select>
         </div>
 
+        <div class="mb-3">
+          <label class="form-label text-muted small fw-bold">Сет</label>
+          {{ filter.form.set }}
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label text-muted small fw-bold">Редкость</label>
+          {{ filter.form.rarity }}
+        </div>
+        
+        <div class="mb-3">
+          <label class="form-label text-muted small fw-bold">CMC</label>
+          {{ filter.form.cmc }}
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label text-muted small fw-bold">Цвета</label>
+          <div class="p-3 rounded bg-black bg-opacity-25 border border-secondary">
+            {% for checkbox in filter.form.colors %}
+              <div class="form-check form-check-inline">
+                {{ checkbox.tag }}
+                <label for="{{ checkbox.id_for_label }}" class="form-check-label">{{ checkbox.choice_label }}</label>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+
         <div class="d-grid">
-          <button class="btn btn-warning fw-bold">Применить</button>
+          <button class="btn btn-warning fw-bold">
+            <i class="bi bi-search"></i> Применить
+          </button>
         </div>
         <div class="text-center mt-2">
           <small class="text-muted">Найдено карт: {{ total_cards }}</small>
@@ -41,16 +123,8 @@
           <div class="card h-100 border-0 bg-dark-panel">
             <a href="{% url 'mtg_app:card_detail' pk=c.id %}" class="d-block text-decoration-none">
               <div class="mtg-card-img-wrapper">
-                {% if c.image %}
-                  <img src="{{ c.image.url }}" alt="{{ c.name }}">
-                {% elif c.image_url %}
-                  {% if c.image_url|slice:":1" == "/" or c.image_url|slice:":4" == "http" %}
-                    <img src="{{ c.image_url }}" alt="{{ c.name }}">
-                  {% else %}
-                    <img src="/media/{{ c.image_url }}" alt="{{ c.name }}">
-                  {% endif %}
-                {% elif c.image_filename %}
-                  <img src="/media/{{ c.image_filename }}" alt="{{ c.name }}">
+                {% if c.image_url %}
+                  <img src="/media/{{ c.image_url }}" alt="{{ c.name }}">
                 {% else %}
                   <div class="card-placeholder">
                     <span>{{ c.name }}</span>
@@ -59,30 +133,60 @@
               </div>
             </a>
             
-            <div class="card-body p-2 d-flex flex-column">
-              <h6 class="card-title text-truncate mb-1" title="{{ c.name }}">
-                <a href="{% url 'mtg_app:card_detail' pk=c.id %}" class="text-white">{{ c.name }}</a>
-              </h6>
-              
-              <div class="mt-auto d-flex justify-content-between align-items-center small">
-                <span class="text-muted text-truncate" style="max-width: 60%;">
-                  {% if c.set %}{{ c.set.code|upper }}{% else %}—{% endif %}
-                </span>
-                
-                {% if c.purchase_price %}
-                  <span class="badge bg-warning text-dark">{{ c.purchase_price|floatformat:0 }} ₽</span>
-                {% endif %}
-              </div>
-            </div>
+            <h6 class="card-title text-truncate mb-1" title="{{ c.name }}">
+  <a href="{% url 'mtg_app:card_detail' pk=c.id %}" class="text-white">{{ c.name }}</a>
+</h6>
+
+<div class="mt-auto d-flex justify-content-between align-items-center">
+  <small class="text-muted text-truncate" style="max-width: 50%;">
+    {% if c.set %}{{ c.set.code|upper }}{% else %}—{% endif %}
+  </small>
+  
+  <div class="btn-group">
+    {% if c.purchase_price > 0 %}
+      <span class="badge bg-warning text-dark d-flex align-items-center" style="border-radius: .375rem 0 0 .375rem;">{{ c.purchase_price|floatformat:0 }} ₽</span>
+    {% endif %}
+    
+    <button class="btn btn-sm btn-outline-warning add-to-deck-btn"
+            data-bs-toggle="modal" 
+            data-bs-target="#addToDeckModal"
+            data-card-id="{{ c.id }}"
+            data-card-name="{{ c.name|escapejs }}"
+            title="Добавить в колоду">
+      <i class="bi bi-plus"></i>
+    </button>
+  </div>
+</div>
           </div>
         </div>
       {% empty %}
         <div class="col-12 text-center py-5">
           <i class="bi bi-inbox fs-1 text-muted"></i>
-          <p class="text-muted mt-2">Карт не найдено.</p>
+          <p class="text-muted mt-2">Карты не найдены, измените фильтры.</p>
         </div>
       {% endfor %}
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+<script>
+  $(document).ready(function() {
+    // Включаем Select2 для всех <select> в форме
+    $('#filter-form select').each(function() {
+      // Кроме стандартной сортировки
+      if (this.name !== 'sort') {
+        $(this).select2({
+          theme: 'bootstrap-5',
+          width: '100%',
+          placeholder: $(this).prev('label').text(), // Берем placeholder из label
+          allowClear: true
+        });
+      }
+    });
+  });
+</script>
 {% endblock %}
